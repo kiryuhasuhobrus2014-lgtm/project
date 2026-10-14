@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реалістична Риболовля - Український Симулятор</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-comfortaa {
+            font-family: 'Comfortaa', cursive;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.8);
+        }
+        .water-wave {
+            background: linear-gradient(180deg, rgba(59,130,246,0.2) 0%, rgba(37,99,235,0.6) 100%);
+        }
+        @keyframes bobbing {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
+        }
+        .float-bob {
+            animation: bobbing 2.5s infinite ease-in-out;
+        }
+        @keyframes bite {
+            0% { transform: translateY(0); }
+            20% { transform: translateY(12px); }
+            40% { transform: translateY(-3px); }
+            60% { transform: translateY(18px); }
+            80% { transform: translateY(2px); }
+            100% { transform: translateY(25px); }
+        }
+        .float-bite {
+            animation: bite 0.6s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700 sticky top-0 z-30 px-4 py-2 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="bg-emerald-600 text-white p-2 rounded-lg shadow-md">
+                <i class="fa-solid font-bold fa-fish text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-comfortaa font-bold text-lg text-emerald-400 leading-tight">Реалістична Риболовля</h1>
+                <p class="text-xs text-slate-400">Український симулятор</p>
+            </div>
+        </div>
+
+        <!-- Player Stats Bar -->
+        <div class="flex items-center gap-4 text-sm mt-2 sm:mt-0 bg-slate-900/60 px-4 py-1.5 rounded-full border border-slate-700/60">
+            <div class="flex items-center gap-1.5 text-amber-400 font-semibold" title="Монети">
+                <i class="fa-solid fa-coins text-amber-400"></i>
+                <span id="player-coins">0</span> ₴
+            </div>
+            <div class="h-4 w-[1px] bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-md border border-emerald-800" id="player-level">1 Рівень</span>
+                <div class="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700" title="Досвід">
+                    <div id="player-xp-bar" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER WITH TABS -->
+    <main class="flex-grow flex flex-col max-w-7xl w-full mx-auto p-2 sm:p-4 gap-4">
+        
+        <!-- NAVIGATION TABS -->
+        <nav class="flex overflow-x-auto gap-2 bg-slate-800/60 p-1.5 rounded-xl border border-slate-700/50 no-scrollbar">
+            <button onclick="switchTab('location')" id="tab-btn-location" class="tab-btn active bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all shadow">
+                <i class="fa-solid fa-water"></i> Водойми
+            </button>
+            <button onclick="switchTab('fishing')" id="tab-btn-fishing" class="tab-btn bg-slate-700/50 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all">
+                <i class="fa-solid fa-anchor"></i> Риболовля
+            </button>
+            <button onclick="switchTab('shop')" id="tab-btn-shop" class="tab-btn bg-slate-700/50 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all">
+                <i class="fa-solid fa-store"></i> Магазин снастей
+            </button>
+            <button onclick="switchTab('keepnet')" id="tab-btn-keepnet" class="tab-btn bg-slate-700/50 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all">
+                <i class="fa-solid fa-shopping-bag"></i> Сашок (<span id="keepnet-count">0</span>)
+            </button>
+            <button onclick="switchTab('pond')" id="tab-btn-pond" class="tab-btn bg-slate-700/50 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap transition-all">
+                <i class="fa-solid fa-tree"></i> Власний Ставок
+            </button>
+        </nav>
+
+        <!-- TAB CONTENT AREA -->
+        <div class="flex-grow flex flex-col">
+            
+            <!-- 1. LOCATIONS SELECTION TAB -->
+            <section id="tab-location" class="tab-content flex-grow">
+                <div class="mb-4">
+                    <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-emerald-400"></i> Оберіть водойму для риболовлі
+                    </h2>
+                    <p class="text-sm text-slate-400">Кожна водойма має свої види риб, глибину та вимоги до рівня рибалки.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="locations-grid">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+            </section>
+
+            <!-- 2. ACTIVE FISHING TAB -->
+            <section id="tab-fishing" class="tab-content hidden flex-grow flex-col">
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 mb-3 flex flex-wrap justify-between items-center gap-2">
+                    <div>
+                        <span class="text-xs text-slate-400">Поточна водойма:</span>
+                        <h3 id="current-location-title" class="text-lg font-bold text-emerald-400">Річка Ірпінь</h3>
+                    </div>
+                    
+                    <!-- Gear Selection Dropdowns -->
+                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                        <div class="flex items-center gap-1 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                            <i class="fa-solid fa-wand-magic-sparkles text-amber-400 text-xs"></i>
+                            <select id="tackle-select" class="bg-transparent text-slate-200 outline-none text-xs" onchange="changeTackle()">
+                                <!-- Dynamically loaded -->
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1 bg-slate-900/80 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                            <i class="fa-solid fa-worm text-rose-400 text-xs"></i>
+                            <select id="bait-select" class="bg-transparent text-slate-200 outline-none text-xs" onchange="changeBait()">
+                                <!-- Dynamically loaded -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CANVAS / GRAPHICAL FISHING ZONE -->
+                <div class="relative flex-grow bg-slate-950 rounded-2xl border border-slate-700 overflow-hidden min-h-[360px] sm:min-h-[420px] flex flex-col justify-between shadow-2xl">
+                    <!-- Location Background Layer -->
+                    <div id="fishing-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-700 opacity-60"></div>
+                    <div class="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-transparent to-slate-900/80"></div>
+
+                    <!-- Water visual effects overlay -->
+                    <div class="absolute bottom-0 left-0 right-0 h-1/2 water-wave backdrop-blur-[1px] border-t border-cyan-400/30"></div>
+
+                    <!-- Top Canvas Indicators -->
+                    <div class="relative z-10 p-4 flex justify-between items-start">
+                        <div class="bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-700/80 text-xs">
+                            <span class="text-slate-400">Тип лову:</span>
+                            <span id="gear-type-badge" class="font-bold text-cyan-400 ml-1">Поплавок</span>
+                        </div>
+                        
+                        <!-- Tension meter for Spinning mode -->
+                        <div id="tension-container" class="hidden bg-slate-900/90 backdrop-blur p-3 rounded-xl border border-slate-700 w-48 shadow-lg">
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-slate-300">Натяг волосіні</span>
+                                <span id="tension-val" class="text-emerald-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800">
+                                <div id="tension-bar" class="bg-emerald-500 h-full w-0 transition-all duration-75"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1 text-center">Тримайте у зеленій зоні!</p>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Float / Lure Display Zone -->
+                    <div id="water-interactive-area" class="relative z-10 flex-grow flex items-center justify-center cursor-pointer" onclick="handleWaterClick()">
+                        <!-- Fishing Line Canvas Vector -->
+                        <svg id="fishing-line-svg" class="absolute inset-0 w-full h-full pointer-events-none">
+                            <line id="rod-line" x1="50%" y1="0" x2="50%" y2="60%" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-dasharray="2,2"/>
+                        </svg>
+
+                        <!-- Float Container -->
+                        <div id="float-element" class="relative transition-all duration-300 hidden">
+                            <!-- Float Graphic -->
+                            <div class="w-4 h-12 flex flex-col items-center float-bob">
+                                <div class="w-1.5 h-5 bg-red-600 rounded-t-sm shadow-sm"></div>
+                                <div class="w-3.5 h-5 bg-white border border-slate-400 rounded-full my-[-2px] shadow"></div>
+                                <div class="w-1 h-4 bg-slate-800"></div>
+                            </div>
+                            <!-- Water ripples -->
+                            <div class="absolute -bottom-1 -left-3 w-10 h-3 border border-cyan-300/40 rounded-full animate-ping pointer-events-none"></div>
+                        </div>
+
+                        <!-- Spinning Lure Container -->
+                        <div id="lure-element" class="relative transition-all duration-100 hidden">
+                            <div class="text-amber-300 text-xl filter drop-shadow-md transform -rotate-45">
+                                <i class="fa-solid fa-fish-fins"></i>
+                            </div>
+                            <div class="absolute -bottom-2 -left-2 w-8 h-2 bg-cyan-400/20 rounded-full blur-xs"></div>
+                        </div>
+
+                        <!-- Hook status message -->
+                        <div id="fishing-status-msg" class="absolute bottom-6 bg-slate-900/90 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-sm font-semibold text-emerald-300 shadow-xl pointer-events-none transition-all">
+                            Закиньте вудку для початку риболовлі
+                        </div>
+                    </div>
+
+                    <!-- Bottom Controls Bar -->
+                    <div class="relative z-10 p-4 bg-slate-900/90 backdrop-blur border-t border-slate-800 flex flex-wrap justify-center items-center gap-3">
+                        <button id="cast-btn" onclick="castRod()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Закинути вудку
+                        </button>
+
+                        <button id="reel-btn" onmousedown="startReeling()" onmouseup="stopReeling()" onmouseleave="stopReeling()" ontouchstart="startReeling()" ontouchend="stopReeling()" class="hidden bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 flex items-center gap-2 select-none">
+                            <i class="fa-solid fa-rotate-right text-lg"></i> Підмотувати волосінь
+                        </button>
+
+                        <button id="strike-btn" onclick="strikeHook()" class="hidden bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 flex items-center gap-2 animate-bounce">
+                            <i class="fa-solid fa-bolt text-lg"></i> ПІДСІКАТИ!
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. GEAR SHOP TAB -->
+            <section id="tab-shop" class="tab-content hidden flex-grow">
+                <div class="mb-4">
+                    <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-store text-emerald-400"></i> Магазин рибальських снастей
+                    </h2>
+                    <p class="text-sm text-slate-400">Купуйте якісні вудки, спінінги та наживку для вилову великої риби.</p>
+                </div>
+
+                <!-- Shop Navigation Subtabs -->
+                <div class="flex gap-2 mb-4 border-b border-slate-700 pb-2">
+                    <button onclick="switchShopCategory('tackle')" id="shop-cat-tackle" class="text-sm font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white">Вудки та Спінінги</button>
+                    <button onclick="switchShopCategory('bait')" id="shop-cat-bait" class="text-sm font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Наживка та Принади</button>
+                </div>
+
+                <!-- Shop Items Grid -->
+                <div id="shop-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </section>
+
+            <!-- 4. KEEPNET / MARKET TAB -->
+            <section id="tab-keepnet" class="tab-content hidden flex-grow">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-shopping-bag text-emerald-400"></i> Вміст вашого сашка
+                        </h2>
+                        <p class="text-sm text-slate-400">Тут зберігається ваш спійманий улов. Ви можете продати рибу або випустити її у свій ставок.</p>
+                    </div>
+                    <button onclick="sellAllFish()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl shadow flex items-center gap-2 text-sm transition">
+                        <i class="fa-solid fa-coins"></i> Продати весь улов
+                    </button>
+                </div>
+
+                <div id="keepnet-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic rendering -->
+                </div>
+            </section>
+
+            <!-- 5. PRIVATE POND TAB -->
+            <section id="tab-pond" class="tab-content hidden flex-grow">
+                <div class="bg-gradient-to-r from-emerald-900/40 to-slate-800 p-6 rounded-2xl border border-emerald-700/40 mb-6 shadow-xl">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <span class="text-xs uppercase tracking-wider text-emerald-400 font-bold">Особисте господарство</span>
+                            <h2 class="text-2xl font-bold text-white flex items-center gap-2 mt-1">
+                                <i class="fa-solid fa-tree text-emerald-400"></i> Власний Рибний Ставок
+                            </h2>
+                            <p class="text-sm text-slate-300 mt-1 max-w-xl">
+                                Випускайте рибу зі свого сашка у власний ставок. Риба розмножується та приносить пасивний дохід монет щосекунди!
+                            </p>
+                        </div>
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 flex flex-col items-end">
+                            <span class="text-xs text-slate-400">Пасивний прибуток:</span>
+                            <span id="pond-income-rate" class="text-xl font-bold text-amber-400">+0.0 ₴/сек</span>
+                            <button onclick="claimPondIncome()" id="claim-pond-btn" class="mt-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition">
+                                Зібрати дохід (<span id="unclaimed-income">0</span> ₴)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-bold text-slate-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-water-ladder text-cyan-400"></i> Риба у вашому ставку (<span id="pond-fish-count">0</span>)
+                </h3>
+
+                <div id="pond-fish-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic rendering -->
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- CATCH DETAILS MODAL (Encyclopedic Style) -->
+    <div id="catch-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl transform transition-all relative">
+            <!-- Modal Header Header -->
+            <div class="bg-gradient-to-r from-emerald-800 to-teal-900 p-4 text-white text-center relative">
+                <span id="modal-fish-rarity" class="text-xs font-bold uppercase tracking-widest bg-slate-950/60 px-3 py-1 rounded-full text-amber-300 border border-amber-400/30">Рідкісна</span>
+                <h3 id="modal-fish-name" class="text-2xl font-bold font-comfortaa mt-2">Язь Звичайний</h3>
+                <p id="modal-fish-latin" class="text-xs text-emerald-200 italic">Leuciscus idus</p>
+            </div>
+
+            <!-- Vector Graphic / Scientific Illustration Box -->
+            <div class="bg-slate-950/80 p-6 flex items-center justify-center relative border-b border-slate-800 min-h-[160px]">
+                <div id="modal-fish-svg" class="w-48 h-28 flex items-center justify-center text-emerald-400 filter drop-shadow-[0_10px_8px_rgba(0,0,0,0.5)]">
+                    <!-- SVG Fish inserted dynamically -->
+                </div>
+            </div>
+
+            <!-- Anatomical & Fish Stats -->
+            <div class="p-5 space-y-4">
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block uppercase">Довжина</span>
+                        <span id="modal-fish-length" class="text-base font-bold text-cyan-400">34 см</span>
+                    </div>
+                    <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block uppercase">Вага</span>
+                        <span id="modal-fish-weight" class="text-base font-bold text-emerald-400">1.25 кг</span>
+                    </div>
+                    <div class="bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block uppercase">Цінність</span>
+                        <span id="modal-fish-price" class="text-base font-bold text-amber-400">45 ₴</span>
+                    </div>
+                </div>
+
+                <!-- Encyclopedic Description -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Науковий опис:</h4>
+                    <p id="modal-fish-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-800">
+                        Прісноводна риба родини коропових. Полюбляє помірну течію та глибину. ХАРЧУЄТЬСЯ личинками комах, молюсками та дрібною рибою.
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2 pt-2">
+                    <button onclick="keepCaughtFish()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl shadow transition text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-shopping-bag"></i> У сашок
+                    </button>
+                    <button onclick="releaseToPondDirectly()" class="flex-1 bg-teal-700 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl shadow transition text-sm flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-tree"></i> У власний ставок
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 max-w-sm pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-emerald-400 text-lg"></i>
+        <span id="toast-msg" class="text-xs font-medium">Сповіщення</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ==========================================================================
+           GAME DATA & ENCYCLOPEDIA DATABASE
+           ========================================================================== */
+        
+        // Detailed Fish Encyclopedia Database
+        const FISH_DATABASE = {
+            karas: {
+                name: 'Карась Сріблястий',
+                latin: 'Carassius gibelio',
+                rarity: 'Звичайна',
+                rarityColor: 'text-slate-300',
+                baseWeight: [0.15, 0.9],
+                baseLength: [12, 28],
+                pricePerKg: 25,
+                xp: 15,
+                desc: 'Невибаглива прісноводна риба родини коропових. Поширена майже в усіх водоймах України. Здатна виживати у водоймах із низьким вмістом кисню.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-slate-300"><path d="M 10 25 C 20 10, 45 5, 75 18 C 85 10, 95 8, 98 12 C 92 20, 92 30, 98 38 C 95 42, 85 40, 75 32 C 45 45, 20 40, 10 25 Z M 40 10 C 50 15, 60 15, 65 20 M 25 22 A 2 2 0 1 0 25 21 Z"/></svg>`
+            },
+            plotva: {
+                name: 'Плітка Європейська',
+                latin: 'Rutilus rutilus',
+                rarity: 'Звичайна',
+                rarityColor: 'text-slate-300',
+                baseWeight: [0.08, 0.45],
+                baseLength: [10, 22],
+                pricePerKg: 30,
+                xp: 12,
+                desc: 'Зграйна риба з помаранчевими плавцями та червоною райдужкою ока. Активно живиться черв’яками, ракоподібними та водоростями.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-orange-300"><path d="M 8 25 C 18 12, 45 8, 78 20 C 88 12, 96 10, 98 15 C 93 22, 93 28, 98 35 C 96 40, 88 38, 78 30 C 45 42, 18 38, 8 25 Z M 20 20 A 1.8 1.8 0 1 0 20 19 Z"/></svg>`
+            },
+            okun: {
+                name: 'Окунь Річковий',
+                latin: 'Perca fluviatilis',
+                rarity: 'Звичайна',
+                rarityColor: 'text-slate-300',
+                baseWeight: [0.1, 0.75],
+                baseLength: [12, 30],
+                pricePerKg: 35,
+                xp: 18,
+                desc: 'Хижа риба з характерними темними поперечними смугами та колючим спинним плавцем. Полює на дрібну рибу та пуголовків.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-emerald-400"><path d="M 5 25 C 15 8, 40 2, 75 18 C 85 8, 95 6, 98 12 C 90 22, 90 28, 98 38 C 95 44, 85 42, 75 32 C 40 48, 15 42, 5 25 Z M 30 8 L 35 2 L 42 10 L 48 2 L 55 12 M 18 20 A 2 2 0 1 0 18 19 Z"/></svg>`
+            },
+            lyshch: {
+                name: 'Лящ Звичайний',
+                latin: 'Abramis brama',
+                rarity: 'Рідкісна',
+                rarityColor: 'text-amber-300',
+                baseWeight: [0.6, 2.8],
+                baseLength: [25, 50],
+                pricePerKg: 55,
+                xp: 35,
+                desc: 'Цінна риба з високим сплюснутим тілом. Живиться на мулистому дні, вишукуючи молюсків, личинок комарів та хробаків.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-amber-200"><path d="M 8 25 C 20 2, 50 2, 78 20 C 88 10, 96 10, 98 16 C 92 24, 92 28, 98 34 C 96 40, 88 40, 78 30 C 50 48, 20 48, 8 25 Z M 22 18 A 2 2 0 1 0 22 17 Z"/></svg>`
+            },
+            sudak: {
+                name: 'Судак Звичайний',
+                latin: 'Sander lucioperca',
+                rarity: 'Рідкісна',
+                rarityColor: 'text-amber-300',
+                baseWeight: [0.8, 4.5],
+                baseLength: [35, 70],
+                pricePerKg: 85,
+                xp: 50,
+                desc: 'Великий цінний хижак родини окуневих. Має іклоподібні зуби та світлочутливі очі, що дозволяє полювати в темряві.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-cyan-300"><path d="M 5 25 C 18 12, 50 10, 80 18 C 88 8, 96 8, 98 14 C 91 22, 91 28, 98 36 C 96 42, 88 42, 80 32 C 50 40, 18 38, 5 25 Z M 20 18 A 2 2 0 1 0 20 17 Z"/></svg>`
+            },
+            shchuka: {
+                name: 'Щука Звичайна',
+                latin: 'Esox lucius',
+                rarity: 'Рідкісна',
+                rarityColor: 'text-amber-300',
+                baseWeight: [1.0, 7.0],
+                baseLength: [40, 95],
+                pricePerKg: 90,
+                xp: 60,
+                desc: 'Швидкий та агресивний хижак з видовженим тілом і пащею, усеяною гострими зубами. Полює із засади в заростях латаття.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-emerald-300"><path d="M 3 25 C 20 15, 60 12, 82 20 C 90 10, 96 10, 98 16 C 92 24, 92 26, 98 34 C 96 40, 90 40, 82 30 C 60 38, 20 35, 3 25 Z M 12 21 A 2 2 0 1 0 12 20 Z"/></svg>`
+            },
+            som: {
+                name: 'Сом Європейський',
+                latin: 'Silurus glanis',
+                rarity: 'Легендарна',
+                rarityColor: 'text-purple-400',
+                baseWeight: [3.5, 22.0],
+                baseLength: [60, 160],
+                pricePerKg: 140,
+                xp: 120,
+                desc: 'Найбільший прісноводний хижак водойм України. Має довгі вуса, безлускате тіло та велетенську пащу. Живе у глибоких ямах.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-indigo-400"><path d="M 3 26 C 20 12, 55 10, 80 18 C 90 8, 96 8, 98 16 C 90 24, 90 28, 98 36 C 96 42, 90 42, 80 32 C 55 42, 20 40, 3 26 Z M 10 22 C 12 18, 2 12, 0 18 M 15 22 A 2.5 2.5 0 1 0 15 21 Z"/></svg>`
+            },
+             короп: {
+                name: 'Короп Дзеркальний',
+                latin: 'Cyprinus carpio',
+                rarity: 'Легендарна',
+                rarityColor: 'text-purple-400',
+                baseWeight: [2.0, 12.0],
+                baseLength: [45, 90],
+                pricePerKg: 110,
+                xp: 95,
+                desc: 'Окультурена форма сазана з великими лусками уздовж бічної лінії. Дуже сильна риба, що вимагає міцних снастей.',
+                svg: `<svg viewBox="0 0 100 50" class="w-full h-full fill-current text-amber-400"><path d="M 8 25 C 20 5, 50 5, 78 20 C 88 10, 96 10, 98 16 C 92 24, 92 28, 98 34 C 96 40, 88 40, 78 30 C 50 45, 20 45, 8 25 Z M 24 18 A 2.5 2.5 0 1 0 24 17 Z"/></svg>`
+            }
+        };
+
+        // Locations Array
+        const LOCATIONS = [
+            {
+                id: 'irpin',
+                name: "Річка Ірпінь",
+                reqLevel: 1,
+                bg: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['karas', 'plotva', 'okun'],
+                desc: 'Тиха річка з помірною течією. Ідеальне місце для початківців.'
+            },
+            {
+                id: 'vira',
+                name: "Озеро Віра",
+                reqLevel: 2,
+                bg: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['karas', 'plotva', 'okun', 'lyshch'],
+                desc: 'Мальовниче затишне озеро з багатою підводною рослинністю.'
+            },
+            {
+                id: 'pomyinyk',
+                name: "Озеро Помийник",
+                reqLevel: 3,
+                bg: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['karas', 'okun', 'shchuka'],
+                desc: 'Заросле озеро з закорчованим дном, де ховаються трофейні щуки.'
+            },
+            {
+                id: 'prypiat',
+                name: "Річка Прип'ять",
+                reqLevel: 4,
+                bg: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['okun', 'shchuka', 'sudak', 'som'],
+                desc: 'Дика загадкова річка з великими глибинами та хижою рибою.'
+            },
+            {
+                id: 'dnipro',
+                name: "Могутній Дніпро",
+                reqLevel: 5,
+                bg: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['lyshch', 'sudak', 'shchuka', 'короп', 'som'],
+                desc: 'Головна артерія України. Широке плесо та глибокі ями з великими сомами.'
+            },
+            {
+                id: 'pivdenny_boh',
+                name: "Південний Буг",
+                reqLevel: 6,
+                bg: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['plotva', 'okun', 'sudak', 'короп'],
+                desc: 'Скелясті пороги та бурхливі порожисті ділянки.'
+            },
+            {
+                id: 'zakhidny_boh',
+                name: "Західний Буг",
+                reqLevel: 7,
+                bg: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['karas', 'lyshch', 'shchuka', 'короп'],
+                desc: 'Прикродонна річка з чистими плесами.'
+            },
+            {
+                id: 'dnister',
+                name: "Дністер",
+                reqLevel: 8,
+                bg: 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?auto=format&fit=crop&w=1000&q=80',
+                fishTypes: ['lyshch', 'sudak', 'shchuka', 'короп', 'som'],
+                desc: 'Каньйонна річка з швидкою течією та унікальним підводним світом.'
+            }
+        ];
+
+        // Gear Data (Shop Items)
+        const SHOP_TACKLES = [
+            { id: 'float_bamboo', name: 'Бамбукова поплавкова вудка', type: 'float', power: 1, price: 0, desc: 'Проста базова вудка для невеликої риби.' },
+            { id: 'float_telescopic', name: 'Телескопічна махова вудка 5m', type: 'float', power: 2.2, price: 150, desc: 'Легка та надійна вудка для лову карася та ляща.' },
+            { id: 'spin_carbon', name: 'Спінінг Carbon Pro 2.1m', type: 'spinning', power: 3.5, price: 400, desc: 'Чутливий спінінг для лову окуня та щуки.' },
+            { id: 'spin_heavy', name: 'Важкий спінінг Titan Monster', type: 'spinning', power: 6.0, price: 1200, desc: 'Потужний спінінг для трофейних сомів та судків.' }
+        ];
+
+        const SHOP_BAITS = [
+            { id: 'worm', name: 'Черв’як хробак', price: 10, qty: 15, desc: 'Універсальна наживка для карася, плітки та окуня.', suitableFor: ['float', 'spinning'] },
+            { id: 'corn', name: 'Солодка кукурудза', price: 25, qty: 20, desc: 'Улюблена ласощ дзеркального коропа та ляща.', suitableFor: ['float'] },
+            { id: 'wobbler_minnow', name: 'Воблер Minnow 70mm', price: 80, qty: 1, desc: 'Активна принада для спінінга. Приваблює щуку та судака.', suitableFor: ['spinning'] }
+        ];
+
+        /* ==========================================================================
+           GAME STATE
+           ========================================================================== */
+        let state = {
+            coins: 100,
+            level: 1,
+            xp: 0,
+            currentLocationId: 'irpin',
+            equippedTackleId: 'float_bamboo',
+            equippedBaitId: 'worm',
+            inventoryTackles: ['float_bamboo'],
+            inventoryBaits: { worm: 20 },
+            keepnet: [],
+            pondFish: [],
+            unclaimedPondIncome: 0,
+            lastIncomeUpdate: Date.now()
+        };
+
+        // Active Fishing State Variables
+        let fishingStatus = 'idle'; // 'idle', 'cast', 'biting', 'reeling', 'caught'
+        let biteTimeout = null;
+        let activeFish = null;
+        let tension = 0; // 0 to 100
+        let reelInterval = null;
+
+        /* ==========================================================================
+           INITIALIZATION & LOCALSTORAGE
+           ========================================================================== */
+        window.onload = function() {
+            loadGame();
+            renderLocations();
+            renderShop();
+            renderTackleSelect();
+            updateUI();
+            
+            // Start passive income ticker for private pond
+            setInterval(updatePondPassiveIncome, 1000);
+        };
+
+        function saveGame() {
+            localStorage.setItem('ua_fishing_sim_save', JSON.stringify(state));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('ua_fishing_sim_save');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                } catch(e) { console.error('Save file corrupt', e); }
+            }
+        }
+
+        /* ==========================================================================
+           UI NAVIGATION & TABS
+           ========================================================================== */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-600', 'text-white', 'shadow');
+                btn.classList.add('bg-slate-700/50', 'text-slate-300');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-700/50', 'text-slate-300');
+                activeBtn.classList.add('bg-emerald-600', 'text-white', 'shadow');
+            }
+
+            if (tabId === 'keepnet') renderKeepnet();
+            if (tabId === 'pond') renderPond();
+            if (tabId === 'fishing') setupFishingZone();
+        }
+
+        function showToast(msg, icon = 'fa-circle-info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            document.getElementById('toast-icon').className = `fa-solid ${icon} text-emerald-400 text-lg`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function updateUI() {
+            document.getElementById('player-coins').innerText = Math.floor(state.coins);
+            document.getElementById('player-level').innerText = `${state.level} Рівень`;
+            
+            // Calculate XP progress
+            const reqXp = state.level * 100;
+            const pct = Math.min(100, Math.floor((state.xp / reqXp) * 100));
+            document.getElementById('player-xp-bar').style.width = `${pct}%`;
+
+            // Update keepnet counter
+            document.getElementById('keepnet-count').innerText = state.keepnet.length;
+
+            saveGame();
+        }
+
+        function addXp(amount) {
+            state.xp += amount;
+            const reqXp = state.level * 100;
+            if (state.xp >= reqXp) {
+                state.xp -= reqXp;
+                state.level++;
+                showToast(`Вітаємо! Ви досягли ${state.level} рівня!`, 'fa-trophy text-amber-400');
+                renderLocations();
+            }
+            updateUI();
+        }
+
+        /* ==========================================================================
+           LOCATIONS RENDER & SELECTION
+           ========================================================================== */
+        function renderLocations() {
+            const grid = document.getElementById('locations-grid');
+            grid.innerHTML = '';
+
+            LOCATIONS.forEach(loc => {
+                const isUnlocked = state.level >= loc.reqLevel;
+                const card = document.createElement('div');
+                card.className = `relative rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between ${
+                    isUnlocked 
+                    ? 'bg-slate-800 border-slate-700 hover:border-emerald-500/60 shadow-lg cursor-pointer transform hover:-translate-y-1' 
+                    : 'bg-slate-900/60 border-slate-800 opacity-60 grayscale'
+                }`;
+
+                card.innerHTML = `
+                    <div class="h-32 bg-cover bg-center relative" style="background-image: url('${loc.bg}')">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent"></div>
+                        <span class="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${isUnlocked ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'}">
+                            ${isUnlocked ? 'Доступно' : `Потрібен ${loc.reqLevel} рівень`}
+                        </span>
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-100 text-base">${loc.name}</h3>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">${loc.desc}</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                            <span class="text-[11px] text-slate-400">Види: ${loc.fishTypes.length} риб</span>
+                            <button ${isUnlocked ? `onclick="selectLocation('${loc.id}')"` : 'disabled'} class="px-3 py-1.5 rounded-lg text-xs font-bold ${
+                                isUnlocked ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow' : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }">
+                                ${state.currentLocationId === loc.id ? 'Обрано' : 'Вибрати'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function selectLocation(locId) {
+            state.currentLocationId = locId;
+            const loc = LOCATIONS.find(l => l.id === locId);
+            showToast(`Вибрано водойму: ${loc.name}`, 'fa-water');
+            renderLocations();
+            switchTab('fishing');
+        }
+
+        /* ==========================================================================
+           FISHING MECHANICS & CANVAS ENGINE
+           ========================================================================== */
+        function renderTackleSelect() {
+            const tackleSel = document.getElementById('tackle-select');
+            const baitSel = document.getElementById('bait-select');
+
+            tackleSel.innerHTML = '';
+            state.inventoryTackles.forEach(tId => {
+                const item = SHOP_TACKLES.find(t => t.id === tId);
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.innerText = item.name;
+                if (item.id === state.equippedTackleId) opt.selected = true;
+                tackleSel.appendChild(opt);
+            });
+
+            baitSel.innerHTML = '';
+            Object.keys(state.inventoryBaits).forEach(bId => {
+                const count = state.inventoryBaits[bId];
+                if (count > 0) {
+                    const item = SHOP_BAITS.find(b => b.id === bId);
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.innerText = `${item.name} (${count} шт)`;
+                    if (item.id === state.equippedBaitId) opt.selected = true;
+                    baitSel.appendChild(opt);
+                }
+            });
+        }
+
+        function changeTackle() {
+            state.equippedTackleId = document.getElementById('tackle-select').value;
+            resetFishingState();
+            setupFishingZone();
+        }
+
+        function changeBait() {
+            state.equippedBaitId = document.getElementById('bait-select').value;
+            resetFishingState();
+        }
+
+        function setupFishingZone() {
+            const loc = LOCATIONS.find(l => l.id === state.currentLocationId);
+            document.getElementById('current-location-title').innerText = loc.name;
+            document.getElementById('fishing-bg').style.backgroundImage = `url('${loc.bg}')`;
+
+            const tackle = SHOP_TACKLES.find(t => t.id === state.equippedTackleId);
+            const badge = document.getElementById('gear-type-badge');
+            
+            if (tackle.type === 'spinning') {
+                badge.innerText = 'Спінінг (Активний)';
+                badge.className = 'font-bold text-amber-400 ml-1';
+            } else {
+                badge.innerText = 'Поплавок (Пасивний)';
+                badge.className = 'font-bold text-cyan-400 ml-1';
+            }
+
+            resetFishingState();
+        }
+
+        function resetFishingState() {
+            clearTimeout(biteTimeout);
+            clearInterval(reelInterval);
+            fishingStatus = 'idle';
+            tension = 0;
+            activeFish = null;
+
+            document.getElementById('float-element').classList.add('hidden');
+            document.getElementById('lure-element').classList.add('hidden');
+            document.getElementById('tension-container').classList.add('hidden');
+            document.getElementById('cast-btn').classList.remove('hidden');
+            document.getElementById('reel-btn').classList.add('hidden');
+            document.getElementById('strike-btn').classList.add('hidden');
+            document.getElementById('fishing-status-msg').innerText = 'Закиньте вудку для початку риболовлі';
+            document.getElementById('fishing-status-msg').className = 'absolute bottom-6 bg-slate-900/90 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-sm font-semibold text-emerald-300 shadow-xl pointer-events-none transition-all';
+        }
+
+        function castRod() {
+            const baitCount = state.inventoryBaits[state.equippedBaitId] || 0;
+            if (baitCount <= 0) {
+                showToast('У вас закінчилася ця наживка! Купіть у магазині.', 'fa-triangle-exclamation text-rose-400');
+                return;
+            }
+
+            const tackle = SHOP_TACKLES.find(t => t.id === state.equippedTackleId);
+            fishingStatus = 'cast';
+
+            document.getElementById('cast-btn').classList.add('hidden');
+            document.getElementById('fishing-status-msg').innerText = 'Очікування покльову...';
+
+            if (tackle.type === 'float') {
+                const floatEl = document.getElementById('float-element');
+                floatEl.classList.remove('hidden');
+                floatEl.children[0].className = 'w-4 h-12 flex flex-col items-center float-bob';
+
+                // Schedule bite time between 3 and 7 seconds
+                const biteDelay = Math.floor(Math.random() * 4000) + 3000;
+                biteTimeout = setTimeout(triggerBite, biteDelay);
+            } else {
+                // Spinning Mode
+                const lureEl = document.getElementById('lure-element');
+                lureEl.classList.remove('hidden');
+                document.getElementById('reel-btn').classList.remove('hidden');
+                document.getElementById('tension-container').classList.remove('hidden');
+                document.getElementById('fishing-status-msg').innerText = 'Затискайте "Підмотувати" для проводки воблера!';
+                
+                prepareSpinningFish();
+            }
+        }
+
+        // Float Fishing Mechanics
+        function triggerBite() {
+            if (fishingStatus !== 'cast') return;
+            fishingStatus = 'biting';
+
+            const floatEl = document.getElementById('float-element');
+            floatEl.children[0].className = 'w-4 h-12 flex flex-col items-center float-bite';
+            
+            document.getElementById('fishing-status-msg').innerText = 'ПОКЛЬОВ! ПІДСІКАЙТЕ!';
+            document.getElementById('fishing-status-msg').className = 'absolute bottom-6 bg-rose-950/90 backdrop-blur px-5 py-2 rounded-full border border-rose-600 text-sm font-bold text-rose-300 shadow-xl pointer-events-none transition-all animate-pulse';
+            
+            document.getElementById('strike-btn').classList.remove('hidden');
+
+            // Miss window after 2.5 seconds
+            biteTimeout = setTimeout(() => {
+                if (fishingStatus === 'biting') {
+                    showToast('Риба збила наживку та втекла!', 'fa-fish-fins text-rose-400');
+                    consumeBait();
+                    resetFishingState();
+                }
+            }, 2500);
+        }
+
+        function strikeHook() {
+            if (fishingStatus !== 'biting') return;
+            clearTimeout(biteTimeout);
+
+            // Calculate fish pull
+            const loc = LOCATIONS.find(l => l.id === state.currentLocationId);
+            const fishKey = loc.fishTypes[Math.floor(Math.random() * loc.fishTypes.length)];
+            activeFish = generateFishInstance(fishKey);
+
+            consumeBait();
+            catchSuccess();
+        }
+
+        // Spinning Reel Mechanics
+        function prepareSpinningFish() {
+            const loc = LOCATIONS.find(l => l.id === state.currentLocationId);
+            const fishKey = loc.fishTypes[Math.floor(Math.random() * loc.fishTypes.length)];
+            activeFish = generateFishInstance(fishKey);
+        }
+
+        function startReeling() {
+            if (fishingStatus !== 'cast' && fishingStatus !== 'reeling') return;
+            fishingStatus = 'reeling';
+
+            reelInterval = setInterval(() => {
+                tension += 6;
+                updateTensionBar();
+
+                if (tension > 90) {
+                    // Line snaps
+                    showToast('Занадто сильний натяг! Волосінь обірвалася!', 'fa-burst text-rose-400');
+                    consumeBait();
+                    stopReeling();
+                    resetFishingState();
+                    return;
+                }
+
+                if (tension >= 40 && tension <= 80) {
+                    // Chance to catch
+                    if (Math.random() < 0.15) {
+                        stopReeling();
+                        consumeBait();
+                        catchSuccess();
+                    }
+                }
+            }, 150);
+        }
+
+        function stopReeling() {
+            clearInterval(reelInterval);
+            if (fishingStatus === 'reeling') {
+                fishingStatus = 'cast';
+            }
+            // tension relaxation
+            const relaxInt = setInterval(() => {
+                if (tension > 0 && fishingStatus !== 'reeling') {
+                    tension = Math.max(0, tension - 4);
+                    updateTensionBar();
+                } else {
+                    clearInterval(relaxInt);
+                }
+            }, 100);
+        }
+
+        function updateTensionBar() {
+            const bar = document.getElementById('tension-bar');
+            const val = document.getElementById('tension-val');
+            bar.style.width = `${tension}%`;
+            val.innerText = `${tension}%`;
+
+            if (tension < 40) bar.className = 'bg-emerald-500 h-full transition-all duration-75';
+            else if (tension <= 80) bar.className = 'bg-amber-500 h-full transition-all duration-75';
+            else bar.className = 'bg-rose-600 h-full transition-all duration-75';
+        }
+
+        function handleWaterClick() {
+            if (fishingStatus === 'biting') {
+                strikeHook();
+            }
+        }
+
+        function consumeBait() {
+            if (state.inventoryBaits[state.equippedBaitId]) {
+                state.inventoryBaits[state.equippedBaitId]--;
+                renderTackleSelect();
+                updateUI();
+            }
+        }
+
+        function generateFishInstance(fishKey) {
+            const db = FISH_DATABASE[fishKey];
+            const weight = +(Math.random() * (db.baseWeight[1] - db.baseWeight[0]) + db.baseWeight[0]).toFixed(2);
+            const length = Math.floor(Math.random() * (db.baseLength[1] - db.baseLength[0]) + db.baseLength[0]);
+            const price = Math.floor(weight * db.pricePerKg);
+
+            return {
+                key: fishKey,
+                name: db.name,
+                latin: db.latin,
+                rarity: db.rarity,
+                rarityColor: db.rarityColor,
+                weight: weight,
+                length: length,
+                price: price,
+                xp: db.xp,
+                desc: db.desc,
+                svg: db.svg,
+                id: Date.now() + Math.random()
+            };
+        }
+
+        /* ==========================================================================
+           CATCH MODAL & ENCYCLOPEDIA LOGIC
+           ========================================================================== */
+        function catchSuccess() {
+            if (!activeFish) return;
+
+            addXp(activeFish.xp);
+
+            // Populate Modal
+            document.getElementById('modal-fish-name').innerText = activeFish.name;
+            document.getElementById('modal-fish-latin').innerText = activeFish.latin;
+            document.getElementById('modal-fish-rarity').innerText = activeFish.rarity;
+            document.getElementById('modal-fish-rarity').className = `text-xs font-bold uppercase tracking-widest bg-slate-950/60 px-3 py-1 rounded-full border border-amber-400/30 ${activeFish.rarityColor}`;
+            document.getElementById('modal-fish-svg').innerHTML = activeFish.svg;
+            document.getElementById('modal-fish-length').innerText = `${activeFish.length} см`;
+            document.getElementById('modal-fish-weight').innerText = `${activeFish.weight} кг`;
+            document.getElementById('modal-fish-price').innerText = `${activeFish.price} ₴`;
+            document.getElementById('modal-fish-desc').innerText = activeFish.desc;
+
+            document.getElementById('catch-modal').classList.remove('hidden');
+            resetFishingState();
+        }
+
+        function keepCaughtFish() {
+            if (activeFish) {
+                state.keepnet.push(activeFish);
+                showToast(`Рибу "${activeFish.name}" поміщено в сашок!`, 'fa-shopping-bag');
+                activeFish = null;
+            }
+            document.getElementById('catch-modal').classList.add('hidden');
+            updateUI();
+        }
+
+        function releaseToPondDirectly() {
+            if (activeFish) {
+                state.pondFish.push(activeFish);
+                showToast(`Рибу "${activeFish.name}" випущено у ваш ставок!`, 'fa-tree');
+                activeFish = null;
+            }
+            document.getElementById('catch-modal').classList.add('hidden');
+            updateUI();
+        }
+
+        /* ==========================================================================
+           SHOP SYSTEM
+           ========================================================================== */
+        let activeShopCategory = 'tackle';
+
+        function switchShopCategory(cat) {
+            activeShopCategory = cat;
+            document.getElementById('shop-cat-tackle').className = cat === 'tackle' ? 'text-sm font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white' : 'text-sm font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700';
+            document.getElementById('shop-cat-bait').className = cat === 'bait' ? 'text-sm font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white' : 'text-sm font-semibold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700';
+            renderShop();
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-items-grid');
+            grid.innerHTML = '';
+
+            if (activeShopCategory === 'tackle') {
+                SHOP_TACKLES.forEach(item => {
+                    const isOwned = state.inventoryTackles.includes(item.id);
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-slate-100 text-base">${item.name}</h4>
+                                <span class="text-xs bg-slate-900 text-amber-400 px-2 py-0.5 rounded font-bold">${item.price > 0 ? item.price + ' ₴' : 'Безкоштовно'}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2 leading-relaxed">${item.desc}</p>
+                            <span class="inline-block mt-3 text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">Потужність: x${item.power}</span>
+                        </div>
+                        <button ${isOwned ? 'disabled' : `onclick="buyTackle('${item.id}')"`} class="mt-4 w-full py-2 rounded-xl text-xs font-bold transition ${
+                            isOwned ? 'bg-slate-700 text-slate-400 cursor-default' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow'
+                        }">
+                            ${isOwned ? 'Вже куплено' : 'Купити'}
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                SHOP_BAITS.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-slate-100 text-base">${item.name}</h4>
+                                <span class="text-xs bg-slate-900 text-amber-400 px-2 py-0.5 rounded font-bold">${item.price} ₴ / ${item.qty} шт</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2 leading-relaxed">${item.desc}</p>
+                        </div>
+                        <button onclick="buyBait('${item.id}')" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl text-xs font-bold shadow transition">
+                            Купити комплект
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        function buyTackle(id) {
+            const item = SHOP_TACKLES.find(t => t.id === id);
+            if (state.coins < item.price) {
+                showToast('Недостатньо монет для покупки!', 'fa-triangle-exclamation text-rose-400');
+                return;
+            }
+            state.coins -= item.price;
+            state.inventoryTackles.push(item.id);
+            showToast(`Куплено: ${item.name}`, 'fa-bag-shopping');
+            renderShop();
+            renderTackleSelect();
+            updateUI();
+        }
+
+        function buyBait(id) {
+            const item = SHOP_BAITS.find(b => b.id === id);
+            if (state.coins < item.price) {
+                showToast('Недостатньо монет для покупки!', 'fa-triangle-exclamation text-rose-400');
+                return;
+            }
+            state.coins -= item.price;
+            state.inventoryBaits[id] = (state.inventoryBaits[id] || 0) + item.qty;
+            showToast(`Куплено: ${item.name} (+${item.qty} шт)`, 'fa-worm');
+            renderShop();
+            renderTackleSelect();
+            updateUI();
+        }
+
+        /* ==========================================================================
+           KEEPNET & MARKET SYSTEM
+           ========================================================================== */
+        function renderKeepnet() {
+            const grid = document.getElementById('keepnet-items-grid');
+            grid.innerHTML = '';
+
+            if (state.keepnet.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-sm">Ваш сашок порожній. Закинути вудку та піймати рибу можна у вкладці "Риболовля".</div>`;
+                return;
+            }
+
+            state.keepnet.forEach((fish, idx) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative';
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-16 h-12 bg-slate-950 rounded-lg p-1 flex items-center justify-center shrink-0 border border-slate-800">
+                            ${fish.svg}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-100 text-sm">${fish.name}</h4>
+                            <div class="flex gap-2 text-[11px] text-slate-400 mt-0.5">
+                                <span>${fish.length} см</span> • <span>${fish.weight} кг</span>
+                            </div>
+                            <span class="text-xs font-bold text-amber-400 mt-1 block">${fish.price} ₴</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4 pt-3 border-t border-slate-700/60">
+                        <button onclick="sellFish(${idx})" class="flex-1 bg-amber-600/80 hover:bg-amber-600 text-white text-xs font-bold py-1.5 rounded-lg shadow transition">
+                            Продати
+                        </button>
+                        <button onclick="transferToPond(${idx})" class="flex-1 bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold py-1.5 rounded-lg shadow transition">
+                            У ставок
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function sellFish(idx) {
+            const fish = state.keepnet[idx];
+            state.coins += fish.price;
+            state.keepnet.splice(idx, 1);
+            showToast(`Продано ${fish.name} за ${fish.price} ₴`, 'fa-coins text-amber-400');
+            renderKeepnet();
+            updateUI();
+        }
+
+        function sellAllFish() {
+            if (state.keepnet.length === 0) return;
+            let total = 0;
+            state.keepnet.forEach(f => total += f.price);
+            state.coins += total;
+            state.keepnet = [];
+            showToast(`Увесь улов продано за ${total} ₴!`, 'fa-coins text-amber-400');
+            renderKeepnet();
+            updateUI();
+        }
+
+        function transferToPond(idx) {
+            const fish = state.keepnet[idx];
+            state.pondFish.push(fish);
+            state.keepnet.splice(idx, 1);
+            showToast(`${fish.name} перенесено у власний ставок!`, 'fa-tree');
+            renderKeepnet();
+            updateUI();
+        }
+
+        /* ==========================================================================
+           PRIVATE POND & PASSIVE INCOME SYSTEM
+           ========================================================================== */
+        function renderPond() {
+            const grid = document.getElementById('pond-fish-grid');
+            grid.innerHTML = '';
+
+            document.getElementById('pond-fish-count').innerText = state.pondFish.length;
+
+            // Calculate income rate
+            let incomePerSec = 0;
+            state.pondFish.forEach(f => {
+                incomePerSec += f.weight * 0.15; // 0.15 coins per kg per sec
+            });
+
+            document.getElementById('pond-income-rate').innerText = `+${incomePerSec.toFixed(2)} ₴/сек`;
+
+            if (state.pondFish.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-sm">У вашому ставку поки немає риби. Перенесіть рибу з сашка або випускайте одразу після вилову!</div>`;
+                return;
+            }
+
+            state.pondFish.forEach((fish) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-800 border border-slate-700 rounded-2xl p-4 flex items-center gap-3 shadow-lg';
+                card.innerHTML = `
+                    <div class="w-16 h-12 bg-slate-950 rounded-lg p-1 flex items-center justify-center shrink-0 border border-slate-800">
+                        ${fish.svg}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-100 text-sm">${fish.name}</h4>
+                        <p class="text-[11px] text-slate-400">${fish.weight} кг • ${(fish.weight * 0.15).toFixed(2)} ₴/сек</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updatePondPassiveIncome() {
+            if (state.pondFish.length === 0) return;
+
+            let incomePerSec = 0;
+            state.pondFish.forEach(f => {
+                incomePerSec += f.weight * 0.15;
+            });
+
+            state.unclaimedPondIncome += incomePerSec;
+            document.getElementById('unclaimed-income').innerText = Math.floor(state.unclaimedPondIncome);
+        }
+
+        function claimPondIncome() {
+            if (state.unclaimedPondIncome < 1) {
+                showToast('Дохід ще не накопичився!', 'fa-circle-info');
+                return;
+            }
+            const claimed = Math.floor(state.unclaimedPondIncome);
+            state.coins += claimed;
+            state.unclaimedPondIncome -= claimed;
+            showToast(`Зібрано пасивний дохід: +${claimed} ₴!`, 'fa-coins text-amber-400');
+            updateUI();
+        }
+    </script>
+</body>
+</html>
